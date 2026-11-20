@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GridPulse — Live Cloud Electric Outage Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        navy: {
+                            950: '#070D19',
+                            900: '#0B1324',
+                            800: '#131F38',
+                            700: '#1E2F52',
+                        },
+                        electric: {
+                            400: '#FBBF24',
+                            500: '#F59E0B',
+                            600: '#D97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .pulse-dot {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans antialiased selection:bg-amber-400 selection:text-slate-900">
+
+    <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- ==================== 1. AUTHENTICATION & PUBLIC ENTRY VIEW ==================== -->
+    <section id="login-view" class="min-h-screen flex flex-col lg:flex-row bg-navy-950 text-white">
+        <!-- Left Brand, Live Cloud Status & Quick Public Actions -->
+        <div class="lg:w-5/12 bg-gradient-to-br from-navy-900 via-navy-950 to-slate-950 p-7 sm:p-10 lg:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#F59E0B 1px, transparent 1px); background-size: 24px 24px;"></div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-amber-500 text-navy-950 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                            <i data-lucide="zap" class="w-6 h-6 fill-current"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-extrabold tracking-tight text-white">GRID<span class="text-amber-400">PULSE</span></span>
+                            <span class="block text-[11px] uppercase tracking-widest text-slate-400 font-semibold">Live Cloud Outage Ops</span>
+                        </div>
+                    </div>
+                    <button onclick="openModal('deploy-modal')"
+                        class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 text-amber-400 border border-slate-700 flex items-center gap-1.5 transition cursor-pointer">
+                        <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                        <span>Free Hosting Guide</span>
+                    </button>
+                </div>
+
+                <h1 class="text-3xl sm:text-4xl font-bold leading-tight text-white mb-3">
+                    Real-Time Grid Outage Registration, Dispatch & Restoration.
+                </h1>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Multi-user cloud portal synchronizing control room dispatchers, mobile field restoration crews, and public outage reports instantaneously across devices.
+                </p>
+
+                <!-- Public Customer Quick-Action Box (No Account Needed) -->
+                <div class="bg-gradient-to-r from-amber-500/15 to-navy-800/80 border border-amber-500/30 rounded-2xl p-5 mb-6 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            Public Customer Self-Service
+                        </span>
+                        <span class="text-[11px] text-slate-300 bg-navy-950/70 px-2 py-0.5 rounded">No Login Required</span>
+                    </div>
+                    <p class="text-xs text-slate-300">
+                        Experiencing a power cut or downed line? Report an incident immediately or track an existing repair ticket.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <button type="button" onclick="enterGuestPortal('register')"
+                            class="py-2.5 px-3.5 bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold text-xs rounded-xl shadow flex items-center justify-center gap-2 transition cursor-pointer">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            <span>Report Outage Now</span>
+                        </button>
+                        <button type="button" onclick="enterGuestPortal('tracker')"
+                            class="py-2.5 px-3.5 bg-navy-900 hover:bg-navy-800 text-white font-semibold text-xs rounded-xl border border-slate-600 flex items-center justify-center gap-2 transition cursor-pointer">
+                            <i data-lucide="search" class="w-4 h-4 text-amber-400"></i>
+                            <span>Track Ticket Status</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Cloud Sync Telemetry Card -->
+                <div class="bg-navy-800/70 backdrop-blur border border-slate-700/70 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <span id="cloud-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
+                            <span id="cloud-status-label">Cloud Sync Active</span>
+                        </span>
+                        <span class="font-mono text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Multi-Device Live</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 pt-2 border-t border-slate-700/60 text-xs">
+                        <div>
+                            <div class="text-slate-400">Active Faults</div>
+                            <div id="login-stat-active" class="text-base font-bold text-white mt-0.5">--</div>
+                        </div>
+                        <div>
+                            <div class="text-slate-400">Dispatched</div>
+                            <div id="login-stat-dispatched" class="text-base font-bold text-amber-400 mt-0.5">--</div>
+                        </div>
+                        <div>
+                            <div class="text-slate-400">Resolved</div>
+                            <div id="login-stat-resolved" class="text-base font-bold text-emerald-400 mt-0.5">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative z-10 mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+                <span>Sidama & Regional Distribution Grid</span>
+                <span class="font-mono">CLOUD-OPS v3.0</span>
+            </div>
+        </div>
+
+        <!-- Right Authentication Panel (Sign In / Create Account / Demo) -->
+        <div class="lg:w-7/12 flex items-center justify-center p-6 sm:p-10 lg:p-12 bg-slate-50 text-slate-900">
+            <div class="w-full max-w-md space-y-6">
+                <!-- Auth Mode Switcher -->
+                <div class="bg-slate-200/80 p-1 rounded-xl grid grid-cols-2 gap-1">
+                    <button type="button" id="auth-tab-signin" onclick="switchAuthMode('signin')"
+                        class="py-2 px-4 rounded-lg text-sm font-bold bg-white text-navy-900 shadow-sm transition cursor-pointer">
+                        Sign In
+                    </button>
+                    <button type="button" id="auth-tab-signup" onclick="switchAuthMode('signup')"
+                        class="py-2 px-4 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer">
+                        Create Account
+                    </button>
+                </div>
+
+                <div>
+                    <h2 id="auth-heading" class="text-2xl font-bold text-slate-900">Operator & Staff Sign In</h2>
+                    <p id="auth-subheading" class="text-sm text-slate-500 mt-1">Log in with your registered email and password to access live dispatch or field tools.</p>
+                </div>
+
+                <!-- Sign In Form -->
+                <form id="signin-form" class="space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/90">
+                    <div>
+                        <label for="signin-email" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Email Address</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="email" id="signin-email" required placeholder="operator@gridpulse.org"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="signin-password" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="password" id="signin-password" required placeholder="••••••••"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="signin-submit-btn"
+                        class="w-full py-3 px-4 bg-navy-900 hover:bg-navy-800 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span>Sign In to Cloud Portal</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-amber-400"></i>
+                    </button>
+                </form>
+
+                <!-- Create Account Form (Hidden by Default) -->
+                <form id="signup-form" class="hidden space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/90">
+                    <div>
+                        <label for="signup-name" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Full Name</label>
+                        <div class="relative">
+                            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="signup-name" required placeholder="e.g., Dawit Bekele"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="signup-email" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Email Address</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="email" id="signup-email" required placeholder="name@example.com"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="signup-password" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Password (Min 6 chars)</label>
+                            <input type="password" id="signup-password" minlength="6" required placeholder="••••••"
+                                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label for="signup-role" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Account Role</label>
+                            <select id="signup-role" required
+                                class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="Dispatcher">Dispatcher</option>
+                                <option value="Field Technician">Field Technician</option>
+                                <option value="Customer / Reporter">Customer / Reporter</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="signup-submit-btn"
+                        class="w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Register Cloud Account</span>
+                    </button>
+                </form>
+
+                <!-- Instant Demo Role Access (Connects via Anonymous Cloud Auth) -->
+                <div class="space-y-2.5">
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-slate-300"></div>
+                        <span class="flex-shrink mx-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Instant Live Cloud Demo Access</span>
+                        <div class="flex-grow border-t border-slate-300"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="quickCloudDemoLogin('Dispatcher', 'Dawit Bekele')"
+                            class="p-2.5 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-400 rounded-xl text-left transition shadow-sm cursor-pointer">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="p-1.5 rounded-lg bg-navy-900 text-amber-400"><i data-lucide="radio" class="w-3.5 h-3.5"></i></span>
+                                <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Ops</span>
+                            </div>
+                            <div class="font-bold text-xs text-slate-900">Dispatcher</div>
+                            <div class="text-[10px] text-slate-500 truncate">Full Control</div>
+                        </button>
+
+                        <button type="button" onclick="quickCloudDemoLogin('Field Technician', 'Eng. Hanna Tadesse')"
+                            class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-xl text-left transition shadow-sm cursor-pointer">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="p-1.5 rounded-lg bg-blue-600 text-white"><i data-lucide="wrench" class="w-3.5 h-3.5"></i></span>
+                                <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">Crew</span>
+                            </div>
+                            <div class="font-bold text-xs text-slate-900">Technician</div>
+                            <div class="text-[10px] text-slate-500 truncate">Solve Faults</div>
+                        </button>
+
+                        <button type="button" onclick="quickCloudDemoLogin('Customer / Reporter', 'Abebe Kebede')"
+                            class="p-2.5 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-400 rounded-xl text-left transition shadow-sm cursor-pointer">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="p-1.5 rounded-lg bg-emerald-600 text-white"><i data-lucide="user-check" class="w-3.5 h-3.5"></i></span>
+                                <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Public</span>
+                            </div>
+                            <div class="font-bold text-xs text-slate-900">Customer</div>
+                            <div class="text-[10px] text-slate-500 truncate">Report & Track</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 2. MAIN APPLICATION PORTAL ==================== -->
+    <div id="app-view" class="hidden min-h-screen flex flex-col">
+        
+        <!-- Top Navigation Bar -->
+        <header class="bg-navy-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Brand & Live Sync Indicator -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-amber-500 text-navy-950 flex items-center justify-center shadow">
+                            <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-extrabold tracking-tight">GRID<span class="text-amber-400">PULSE</span></span>
+                                <span id="header-sync-badge" class="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    LIVE CLOUD
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs (Desktop) -->
+                    <nav class="hidden md:flex items-center gap-1.5 bg-navy-950/80 p-1 rounded-xl border border-slate-800">
+                        <button onclick="switchTab('dashboard')" id="nav-dashboard"
+                            class="tab-btn px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer bg-amber-500 text-navy-950">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                            <span>Dispatch & Solving Board</span>
+                        </button>
+                        <button onclick="switchTab('register')" id="nav-register"
+                            class="tab-btn px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer text-slate-300 hover:text-white hover:bg-navy-800">
+                            <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+                            <span>Register Outage</span>
+                        </button>
+                        <button onclick="switchTab('tracker')" id="nav-tracker"
+                            class="tab-btn px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer text-slate-300 hover:text-white hover:bg-navy-800">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                            <span>Public Outage Tracker</span>
+                        </button>
+                    </nav>
+
+                    <!-- User Profile & Controls -->
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="openModal('deploy-modal')" title="Free Hosting & Deployment Guide"
+                            class="p-2 text-slate-300 hover:text-amber-400 hover:bg-navy-800 rounded-lg transition cursor-pointer">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex flex-col text-right border-r border-slate-700 pr-3">
+                            <span id="header-user-name" class="text-xs font-bold text-white leading-none">Operator</span>
+                            <span id="header-user-role" class="text-[11px] font-medium text-amber-400 mt-1">Dispatcher</span>
+                        </div>
+                        <button onclick="handleLogout()"
+                            class="px-3 py-2 bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer border border-slate-700">
+                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                            <span>Exit</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Navigation Tabs -->
+                <div class="flex md:hidden gap-1.5 pb-3 overflow-x-auto">
+                    <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard"
+                        class="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-amber-500 text-navy-950 whitespace-nowrap">
+                        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                        <span>Dispatch Board</span>
+                    </button>
+                    <button onclick="switchTab('register')" id="mobile-nav-register"
+                        class="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-navy-800 text-slate-300 whitespace-nowrap">
+                        <i data-lucide="file-plus-2" class="w-3.5 h-3.5"></i>
+                        <span>Register</span>
+                    </button>
+                    <button onclick="switchTab('tracker')" id="mobile-nav-tracker"
+                        class="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-navy-800 text-slate-300 whitespace-nowrap">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                        <span>Track Ticket</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Role Access Notice Banner for Public/Customer Users -->
+        <div id="role-notice-banner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                    <span>You are viewing in <strong>Public Customer Mode</strong>. Dispatch and Resolution controls are restricted to authorized Utility Dispatchers and Field Technicians.</span>
+                </div>
+                <button onclick="handleLogout()" class="font-bold underline text-amber-800 hover:text-amber-950 cursor-pointer">
+                    Sign in as Staff
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Workspace Container -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+            <!-- ==================== TAB A: DISPATCHING & SOLVING DASHBOARD ==================== -->
+            <div id="tab-dashboard" class="space-y-6">
+                
+                <!-- Top Action Banner -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Outage Dispatch & Restoration Center</h1>
+                        <p class="text-sm text-slate-500">Live synchronized cloud board for feeder faults, crew dispatching, and restoration sign-off.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button onclick="exportTicketsToCSV()"
+                            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold text-xs sm:text-sm rounded-xl shadow-sm transition cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+                            <span>Export CSV Report</span>
+                        </button>
+                        <button onclick="switchTab('register')"
+                            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold text-xs sm:text-sm rounded-xl shadow-sm transition cursor-pointer">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>Log New Outage</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 Live KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Active Outages</span>
+                            <div id="kpi-active" class="text-3xl font-extrabold text-slate-900 mt-1">0</div>
+                            <span class="text-xs text-slate-400 mt-1 inline-block">Unresolved grid tickets</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                            <i data-lucide="zap-off" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Dispatch</span>
+                            <div id="kpi-pending" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+                            <span class="text-xs text-slate-400 mt-1 inline-block">Awaiting crew assignment</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                            <i data-lucide="clock-alert" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Dispatched / En Route</span>
+                            <div id="kpi-progress" class="text-3xl font-extrabold text-blue-600 mt-1">0</div>
+                            <span class="text-xs text-slate-400 mt-1 inline-block">Crews dispatched or on-site</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <i data-lucide="truck" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Resolved Tickets</span>
+                            <div id="kpi-resolved" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+                            <span class="text-xs text-slate-400 mt-1 inline-block">Power restored & verified</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter & Search Control Bar -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="filter-search" oninput="renderTickets()"
+                            placeholder="Search by Ticket ID, Reporter, Phone, Landmark, or Crew..."
+                            class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <div class="flex flex-wrap sm:flex-nowrap gap-2.5">
+                        <select id="filter-status" onchange="renderTickets()"
+                            class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">All Statuses</option>
+                            <option value="Registered">Registered (Unassigned)</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+
+                        <select id="filter-priority" onchange="renderTickets()"
+                            class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">All Priorities</option>
+                            <option value="Critical">Critical / Hazard</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+
+                        <select id="filter-district" onchange="renderTickets()"
+                            class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">All Districts</option>
+                            <option value="Tabor">Tabor District</option>
+                            <option value="Menaharia">Menaharia District</option>
+                            <option value="Misrak">Misrak District</option>
+                            <option value="Hayk Dar">Hayk Dar District</option>
+                            <option value="Addis Ketema">Addis Ketema</option>
+                            <option value="Tula">Tula Sub-City</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tickets Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th class="py-3.5 px-4">Ticket ID & Time</th>
+                                    <th class="py-3.5 px-4">District, Landmark & GPS</th>
+                                    <th class="py-3.5 px-4">Fault Category</th>
+                                    <th class="py-3.5 px-4">Priority</th>
+                                    <th class="py-3.5 px-4">Status</th>
+                                    <th class="py-3.5 px-4">Assigned Crew / ETA</th>
+                                    <th class="py-3.5 px-4 text-right">Workflow Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tickets-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically via live Firestore listener -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loading-state" class="py-12 px-4 text-center">
+                        <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                        <p class="text-sm font-semibold text-slate-600">Synchronizing live grid tickets from cloud...</p>
+                    </div>
+
+                    <!-- Empty Filter State -->
+                    <div id="empty-state" class="hidden py-12 px-4 text-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="search-x" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-800">No outage tickets match your view</h3>
+                        <p class="text-sm text-slate-500 mt-1">Adjust your search filters or register a new outage ticket.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== TAB B: ELECTRIC OUTAGE REGISTRATION FORM ==================== -->
+            <div id="tab-register" class="hidden max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- Form Header -->
+                    <div class="bg-navy-900 text-white p-6 sm:p-8 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div class="inline-flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                <span>Live Cloud Incident Intake</span>
+                            </div>
+                            <h2 class="text-2xl font-bold">Register Electric Outage</h2>
+                            <p class="text-slate-400 text-sm mt-1">Submitted tickets appear immediately on the Control Room Dispatch Board.</p>
+                        </div>
+                        <div class="bg-navy-800 border border-slate-700 rounded-xl px-4 py-3 text-left sm:text-right shrink-0">
+                            <div class="text-[11px] uppercase tracking-wider text-slate-400">Assigned Ticket ID</div>
+                            <div id="preview-ticket-id" class="font-mono text-base font-bold text-amber-400">OUT-2026-XXXX</div>
+                            <div id="preview-timestamp" class="font-mono text-[11px] text-slate-400 mt-0.5">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <form id="outage-registration-form" class="p-6 sm:p-8 space-y-6">
+                        <!-- Reporter Info Row -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="reg-name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Reporter Full Name <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="text" id="reg-name" required placeholder="e.g., Selamawit Girma"
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+
+                            <div>
+                                <label for="reg-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Phone Number <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="tel" id="reg-phone" required placeholder="e.g., +251 911 234 567"
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+
+                            <div>
+                                <label for="reg-meter" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Account / Meter No. <span class="text-slate-400 font-normal">(Optional)</span>
+                                </label>
+                                <input type="text" id="reg-meter" placeholder="e.g., MTR-884120"
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                        </div>
+
+                        <!-- Location Row -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label for="reg-district" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Region / District <span class="text-rose-500">*</span>
+                                </label>
+                                <select id="reg-district" required
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                    <option value="">Select District...</option>
+                                    <option value="Tabor">Tabor District (Feeder T-01)</option>
+                                    <option value="Menaharia">Menaharia District (Feeder M-04)</option>
+                                    <option value="Misrak">Misrak District (Feeder E-02)</option>
+                                    <option value="Hayk Dar">Hayk Dar District (Lakeside Line)</option>
+                                    <option value="Addis Ketema">Addis Ketema (Substation West)</option>
+                                    <option value="Tula">Tula Sub-City (Industrial Zone)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="reg-landmark" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Specific Landmark / Pole ID <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="text" id="reg-landmark" required placeholder="e.g., Behind St. Gabriel Church, Pole #44"
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                        </div>
+
+                        <!-- GPS Auto-Detect Bar -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <label for="reg-gps" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                    GPS Coordinates (Optional for Rapid Crew Navigation)
+                                </label>
+                                <input type="text" id="reg-gps" placeholder="Latitude, Longitude (e.g., 7.0504, 38.4955)"
+                                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <button type="button" id="detect-gps-btn" onclick="detectGPSLocation()"
+                                class="sm:mt-5 px-4 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer shrink-0">
+                                <i data-lucide="crosshair" class="w-4 h-4 text-amber-400"></i>
+                                <span>Auto-Detect My GPS</span>
+                            </button>
+                        </div>
+
+                        <!-- Fault Classification & Urgency -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label for="reg-type" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Fault Category <span class="text-rose-500">*</span>
+                                </label>
+                                <select id="reg-type" required
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                    <option value="Transformer Failure">Transformer Failure (Sparking / Oil Leak / Blown)</option>
+                                    <option value="Downed Power Line">Downed / Snapped Power Line</option>
+                                    <option value="Phase Outage">Phase Outage (Total or Partial Blackout)</option>
+                                    <option value="Voltage Fluctuation">Voltage Fluctuation / Low Voltage (Brownout)</option>
+                                    <option value="Meter / Service Drop Issue">Meter / Service Drop Cable Issue</option>
+                                    <option value="Substation Trip">Substation Feeder Trip</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="reg-priority" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Priority Level <span class="text-rose-500">*</span>
+                                </label>
+                                <select id="reg-priority" required
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                    <option value="Critical">Critical / Hazard (Live Wire / Hospital / Fire Risk)</option>
+                                    <option value="High">High (Transformer Outage / Multi-Block Blackout)</option>
+                                    <option value="Medium" selected>Medium (Standard Residential / Commercial)</option>
+                                    <option value="Low">Low (Single Meter / Minor Voltage Flicker)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label for="reg-description" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                Detailed Description & Field Observations <span class="text-rose-500">*</span>
+                            </label>
+                            <textarea id="reg-description" rows="3" required
+                                placeholder="Describe sparks, loud noises, number of affected buildings, or nearby landmarks..."
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                        </div>
+
+                        <!-- Submit & Cancel Actions -->
+                        <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-end gap-3">
+                            <button type="button" onclick="switchTab(isStaffUser() ? 'dashboard' : 'tracker')"
+                                class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition cursor-pointer">
+                                Cancel
+                            </button>
+                            <button type="submit" id="reg-submit-btn"
+                                class="w-full sm:w-auto px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Submit Live Outage Ticket</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ==================== TAB C: PUBLIC CUSTOMER OUTAGE TRACKER ==================== -->
+            <div id="tab-tracker" class="hidden max-w-3xl mx-auto space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-navy-900 text-white p-6 sm:p-8 border-b border-slate-800">
+                        <div class="inline-flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+                            <i data-lucide="radar" class="w-4 h-4"></i>
+                            <span>Live Customer Status Lookup</span>
+                        </div>
+                        <h2 class="text-2xl font-bold">Track Your Outage Repair Status</h2>
+                        <p class="text-slate-400 text-sm mt-1">Enter your Ticket ID (e.g., <span class="font-mono text-amber-400">OUT-2026-1041</span>) or registered phone number to view real-time crew dispatch updates.</p>
+                    </div>
+
+                    <div class="p-6 sm:p-8 space-y-6">
+                        <form id="tracker-search-form" class="flex flex-col sm:flex-row gap-3">
+                            <div class="relative flex-1">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="tracker-query-input" required
+                                    placeholder="Enter Ticket ID (OUT-2026-XXXX) or Phone Number..."
+                                    class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <button type="submit"
+                                class="px-6 py-3 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl shadow flex items-center justify-center gap-2 transition cursor-pointer">
+                                <i data-lucide="search" class="w-4 h-4 text-amber-400"></i>
+                                <span>Check Status</span>
+                            </button>
+                        </form>
+
+                        <!-- Quick Sample Ticket Chips -->
+                        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span>Try sample tickets:</span>
+                            <button type="button" onclick="quickTrackSample('OUT-2026-1041')" class="font-mono px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold transition cursor-pointer">OUT-2026-1041</button>
+                            <button type="button" onclick="quickTrackSample('OUT-2026-1040')" class="font-mono px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold transition cursor-pointer">OUT-2026-1040</button>
+                            <button type="button" onclick="quickTrackSample('OUT-2026-1038')" class="font-mono px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold transition cursor-pointer">OUT-2026-1038</button>
+                        </div>
+
+                        <!-- Tracker Results Container -->
+                        <div id="tracker-results" class="space-y-4">
+                            <div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 text-sm">
+                                Enter a Ticket ID or Phone Number above to inspect live repair progress.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ==================== 3. DISPATCH CREW MODAL ==================== -->
+    <div id="dispatch-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="bg-navy-900 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="truck" class="w-5 h-5 text-amber-400"></i>
+                    <h3 class="font-bold text-lg">Dispatch Field Crew</h3>
+                </div>
+                <button onclick="closeModal('dispatch-modal')" class="text-slate-400 hover:text-white cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="dispatch-form" class="p-6 space-y-4">
+                <input type="hidden" id="dispatch-ticket-doc-id">
+                <input type="hidden" id="dispatch-ticket-code">
+                
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span id="dispatch-modal-code" class="font-mono font-bold text-navy-900">OUT-2026-1001</span>
+                        <span id="dispatch-modal-priority" class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Critical</span>
+                    </div>
+                    <p id="dispatch-modal-location" class="text-slate-600 mt-1 font-medium text-xs">Tabor District — Near Piazza</p>
+                </div>
+
+                <div>
+                    <label for="dispatch-crew" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Assign Response Team / Technician <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="dispatch-crew" required
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="Team Alpha — High Voltage & Substation">Team Alpha — High Voltage & Substation</option>
+                        <option value="Team Beta — Distribution & Transformer">Team Beta — Distribution & Transformer</option>
+                        <option value="Team Gamma — Emergency Line Response">Team Gamma — Emergency Line Response</option>
+                        <option value="Team Delta — Metering & LV Service">Team Delta — Metering & LV Service</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="dispatch-crew-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Crew Lead Phone <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="tel" id="dispatch-crew-phone" required value="+251 911 800 412"
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <div>
+                        <label for="dispatch-eta" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Estimated Arrival (ETA) <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="dispatch-eta" required
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="15 mins">15 Minutes (Emergency)</option>
+                            <option value="30 mins" selected>30 Minutes</option>
+                            <option value="45 mins">45 Minutes</option>
+                            <option value="1 hour">1 Hour</option>
+                            <option value="2 hours">2 Hours</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="dispatch-notes" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Dispatch Safety & Switching Notes
+                    </label>
+                    <input type="text" id="dispatch-notes" placeholder="e.g., Isolate feeder breaker before climbing pole..."
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeModal('dispatch-modal')"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-5 py-2 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl shadow flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
+                        <span>Confirm Live Dispatch</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== 4. SOLVING / RESOLUTION MODAL ==================== -->
+    <div id="solve-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+            <div class="bg-emerald-700 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-200"></i>
+                    <h3 class="font-bold text-lg">Outage Solving & Restoration Form</h3>
+                </div>
+                <button onclick="closeModal('solve-modal')" class="text-emerald-100 hover:text-white cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="solve-form" class="p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="solve-ticket-doc-id">
+                <input type="hidden" id="solve-ticket-code">
+
+                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span id="solve-modal-code" class="font-mono font-bold text-emerald-950">OUT-2026-1001</span>
+                        <span id="solve-modal-crew" class="text-xs font-semibold text-emerald-800">Team Alpha</span>
+                    </div>
+                    <p id="solve-modal-summary" class="text-slate-700 mt-1 text-xs">Phase Outage at Tabor District</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="solve-root-cause" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Root Cause Analysis <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="solve-root-cause" required
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="Blown Drop-Out Fuse">Blown Drop-Out Fuse (15kV/33kV)</option>
+                            <option value="Transformer Overload / Winding Fault">Transformer Overload / Winding Fault</option>
+                            <option value="Snapped Conductor / Tree Contact">Snapped Conductor / Vegetation Contact</option>
+                            <option value="Insulator Flashover / Surge">Insulator Flashover / Lightning Surge</option>
+                            <option value="Loose Feeder Jumper / Clamp">Loose Feeder Jumper / Clamp</option>
+                            <option value="Customer Main Breaker / Meter Fault">Customer Main Breaker / Meter Fault</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="solve-action" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Corrective Action Taken <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="solve-action" required
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="Replaced Fuse & Re-energized Feeder">Replaced Fuse & Re-energized Feeder</option>
+                            <option value="Spliced & Tensioned Overhead Line">Spliced & Tensioned Overhead Line</option>
+                            <option value="Replaced Distribution Transformer">Replaced Distribution Transformer</option>
+                            <option value="Cleared Vegetation & Reset Breaker">Cleared Vegetation & Reset Breaker</option>
+                            <option value="Replaced Burnt Service Cable / Meter">Replaced Burnt Service Cable / Meter</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="solve-materials" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Spare Parts & Materials Used
+                    </label>
+                    <input type="text" id="solve-materials" placeholder="e.g., 2x 100A Fuse Links, 15m AAC 50mm² Conductor, 3x PG Clamps"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label for="solve-notes" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Verification & Voltage Check Notes <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea id="solve-notes" rows="3" required
+                        placeholder="Confirm secondary voltage readings (230V/400V nominal) and public safety clearance..."
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeModal('solve-modal')"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Mark Resolved & Restore Power</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== 5. TICKET DETAILS & AUDIT MODAL ==================== -->
+    <div id="details-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-navy-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+                    <h3 id="details-modal-title" class="font-bold text-lg font-mono">OUT-2026-1001</h3>
+                </div>
+                <button onclick="closeModal('details-modal')" class="text-slate-400 hover:text-white cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="details-modal-body" class="p-6 overflow-y-auto space-y-5 text-sm">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex justify-end shrink-0">
+                <button onclick="closeModal('details-modal')"
+                    class="px-5 py-2 bg-navy-900 text-white font-semibold text-sm rounded-xl cursor-pointer">
+                    Close Dossier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 6. ABOUT & FREE DEPLOYMENT GUIDE MODAL ==================== -->
+    <div id="deploy-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-navy-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="rocket" class="w-5 h-5 text-amber-400"></i>
+                    <h3 class="font-bold text-lg">Free Web Hosting & Official Deployment Guide</h3>
+                </div>
+                <button onclick="closeModal('deploy-modal')" class="text-slate-400 hover:text-white cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 text-sm text-slate-700 leading-relaxed">
+                <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs">
+                    <strong>100% Free Forever Architecture:</strong> Because GridPulse is built as a single self-contained HTML/JS application connected to Firebase Cloud, you can host it publicly at <strong>$0/month</strong> with automatic HTTPS/SSL and global CDN speed.
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-navy-900 text-amber-400 text-xs flex items-center justify-center font-bold">1</span>
+                        <span>Option A: Deploy on Firebase Hosting (Recommended)</span>
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-600 pl-2">
+                        <li>Create a free project at <strong>console.firebase.google.com</strong> and enable <strong>Authentication</strong> (Email/Password & Anonymous) and <strong>Cloud Firestore</strong>.</li>
+                        <li>Install Firebase CLI on your computer: <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">npm install -g firebase-tools</code></li>
+                        <li>Place this <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">index.html</code> inside a <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">public/</code> folder and run <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">firebase init hosting</code> followed by <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">firebase deploy</code>.</li>
+                        <li>Your site goes live immediately at <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">https://your-project-id.web.app</code>.</li>
+                    </ol>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-navy-900 text-amber-400 text-xs flex items-center justify-center font-bold">2</span>
+                        <span>Option B: Instant Drag-and-Drop on Netlify Drop</span>
+                    </h4>
+                    <p class="text-xs text-slate-600 pl-8">
+                        Save this file as <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">index.html</code> inside a folder, visit <strong>app.netlify.com/drop</strong>, and drag the folder into your browser. You will get a live shareable HTTPS link in 10 seconds for free.
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-navy-900 text-amber-400 text-xs flex items-center justify-center font-bold">3</span>
+                        <span>Option C: Free GitHub Pages Hosting</span>
+                    </h4>
+                    <p class="text-xs text-slate-600 pl-8">
+                        Create a free GitHub repository, upload <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">index.html</code>, go to <strong>Settings → Pages</strong>, and select the <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">main</code> branch to publish at <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">https://username.github.io/gridpulse</code>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex justify-end shrink-0">
+                <button onclick="closeModal('deploy-modal')"
+                    class="px-5 py-2 bg-navy-900 text-white font-semibold text-sm rounded-xl cursor-pointer">
+                    Got It
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FIREBASE SDK & LIVE CLOUD APPLICATION LOGIC ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            updateProfile,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            doc,
+            addDoc,
+            setDoc,
+            updateDoc,
+            getDocs,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment Configuration
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : { apiKey: "demo-key", authDomain: "demo.firebaseapp.com", projectId: "demo-project" };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Strict Firestore Public Collection Path
+        const outagesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'outages');
+
+        // Global App State
+        let tickets = [];
+        let currentUserProfile = null; // { uid, name, email, role, isGuest }
+        let unsubscribeOutages = null;
+        let seededCheckDone = false;
+
+        // Initial Seed Tickets if Cloud Collection is Empty
+        const SEED_OUTAGES = [
+            {
+                ticketCode: 'OUT-2026-1041',
+                reporterName: 'Mekdes Alemu',
+                phone: '+251 916 821 409',
+                meterNumber: 'MTR-409182',
+                district: 'Tabor',
+                landmark: 'Near Tabor Mountain View Hotel, Pole #18',
+                gpsCoordinates: '7.0482, 38.4912',
+                outageType: 'Transformer Failure',
+                priority: 'Critical',
+                description: 'Loud explosion heard from pole-mounted 315kVA transformer followed by sparking and complete blackout across 40+ residences.',
+                status: 'Registered',
+                createdAt: '2026-11-20 18:15',
+                createdTimestamp: 1795198500000,
+                assignedCrew: null,
+                crewPhone: null,
+                eta: null,
+                dispatchNotes: null,
+                resolution: null
+            },
+            {
+                ticketCode: 'OUT-2026-1040',
+                reporterName: 'Dr. Yohannes Tsegaye',
+                phone: '+251 911 450 992',
+                meterNumber: 'MTR-110459',
+                district: 'Menaharia',
+                landmark: 'Behind Referral Hospital Main Gate',
+                gpsCoordinates: '7.0395, 38.4781',
+                outageType: 'Downed Power Line',
+                priority: 'Critical',
+                description: 'Heavy wind snapped secondary overhead conductor; wire resting near roadside drainage.',
+                status: 'Dispatched',
+                createdAt: '2026-11-20 17:40',
+                createdTimestamp: 1795196400000,
+                assignedCrew: 'Team Gamma — Emergency Line Response',
+                crewPhone: '+251 911 800 415',
+                eta: '15 mins',
+                dispatchNotes: 'Prioritize perimeter safety cordon immediately upon arrival.',
+                resolution: null
+            },
+            {
+                ticketCode: 'OUT-2026-1039',
+                reporterName: 'Bereket Solomon',
+                phone: '+251 922 301 774',
+                meterNumber: 'MTR-774301',
+                district: 'Hayk Dar',
+                landmark: 'Amora Gedel Lakeside Commercial Strip',
+                gpsCoordinates: '7.0561, 38.4630',
+                outageType: 'Voltage Fluctuation',
+                priority: 'High',
+                description: 'Phase B voltage dropped below 145V; refrigeration units and hotel pumps unable to start.',
+                status: 'In Progress',
+                createdAt: '2026-11-20 16:20',
+                createdTimestamp: 1795191600000,
+                assignedCrew: 'Team Beta — Distribution & Transformer',
+                crewPhone: '+251 911 800 413',
+                eta: 'On Site',
+                dispatchNotes: 'Check neutral connection and load balancing on Feeder L-02.',
+                resolution: null
+            },
+            {
+                ticketCode: 'OUT-2026-1038',
+                reporterName: 'Tigist Hailemariam',
+                phone: '+251 913 778 210',
+                meterNumber: 'MTR-210778',
+                district: 'Misrak',
+                landmark: 'Alamura Primary School Junction',
+                gpsCoordinates: '7.0310, 38.5024',
+                outageType: 'Phase Outage',
+                priority: 'Medium',
+                description: 'Entire neighborhood lost power around 14:10. No visible line damage.',
+                status: 'Resolved',
+                createdAt: '2026-11-20 14:15',
+                createdTimestamp: 1795184100000,
+                assignedCrew: 'Team Alpha — High Voltage & Substation',
+                crewPhone: '+251 911 800 412',
+                eta: 'Completed',
+                dispatchNotes: 'Inspect 15kV drop-out fuse assembly.',
+                resolution: {
+                    rootCause: 'Blown Drop-Out Fuse',
+                    actionTaken: 'Replaced Fuse & Re-energized Feeder',
+                    materialsUsed: '1x 63A Expulsion Fuse Link, Copper Binding Wire',
+                    notes: 'Replaced blown Phase R fuse link. Measured 232V L-N across all three phases. Power fully restored.',
+                    resolvedAt: '2026-11-20 15:32',
+                    resolvedBy: 'Eng. Hanna Tadesse'
+                }
+            }
+        ];
+
+        // ==================== AUTHENTICATION BOOTSTRAP ====================
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn('Initial auth bootstrap fallback:', err.message);
+                try {
+                    await signInAnonymously(auth);
+                } catch (anonErr) {
+                    console.error('Anonymous auth error:', anonErr);
+                }
+            }
+        }
+
+        // Listen to Firebase Auth State Changes
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            await startRealtimeOutageSync(user);
+        });
+
+        // Start Real-time Firestore Listener (RULE 2: simple collection query, sort in JS)
+        async function startRealtimeOutageSync(user) {
+            if (!user) return;
+
+            // Seed initial data once if collection is empty
+            if (!seededCheckDone) {
+                seededCheckDone = true;
+                try {
+                    const snap = await getDocs(outagesCollectionRef);
+                    if (snap.empty) {
+                        for (const item of SEED_OUTAGES) {
+                            await addDoc(outagesCollectionRef, item);
+                        }
+                    }
+                } catch (seedErr) {
+                    console.warn('Seed check notice:', seedErr.message);
+                }
+            }
+
+            if (unsubscribeOutages) unsubscribeOutages();
+
+            unsubscribeOutages = onSnapshot(
+                outagesCollectionRef,
+                (snapshot) => {
+                    const list = [];
+                    snapshot.forEach((docSnap) => {
+                        list.push({ docId: docSnap.id, ...docSnap.data() });
+                    });
+                    // Sort newest first in JS memory
+                    list.sort((a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0));
+                    tickets = list;
+
+                    document.getElementById('loading-state').classList.add('hidden');
+                    updateLoginScreenStats();
+                    updateNextTicketPreview();
+                    renderTickets();
+
+                    // Also refresh tracker if query is active
+                    const trackerInput = document.getElementById('tracker-query-input').value.trim();
+                    if (trackerInput) {
+                        runPublicTrackerSearch(trackerInput);
+                    }
+                },
+                (error) => {
+                    console.error('Firestore real-time sync error:', error);
+                    document.getElementById('loading-state').classList.add('hidden');
+                    showToast('Cloud sync warning: Check network or database rules.', 'error');
+                }
+            );
+        }
+
+        function updateLoginScreenStats() {
+            const active = tickets.filter(t => t.status !== 'Resolved').length;
+            const dispatched = tickets.filter(t => t.status === 'Dispatched' || t.status === 'In Progress').length;
+            const resolved = tickets.filter(t => t.status === 'Resolved').length;
+
+            document.getElementById('login-stat-active').textContent = active;
+            document.getElementById('login-stat-dispatched').textContent = dispatched;
+            document.getElementById('login-stat-resolved').textContent = resolved;
+        }
+
+        // ==================== SIGN IN / SIGN UP / DEMO / GUEST HANDLERS ====================
+        window.switchAuthMode = function(mode) {
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const tabIn = document.getElementById('auth-tab-signin');
+            const tabUp = document.getElementById('auth-tab-signup');
+            const heading = document.getElementById('auth-heading');
+            const subheading = document.getElementById('auth-subheading');
+
+            if (mode === 'signin') {
+                signinForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                tabIn.className = 'py-2 px-4 rounded-lg text-sm font-bold bg-white text-navy-900 shadow-sm transition cursor-pointer';
+                tabUp.className = 'py-2 px-4 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                heading.textContent = 'Operator & Staff Sign In';
+                subheading.textContent = 'Log in with your registered email and password to access live dispatch or field tools.';
+            } else {
+                signinForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                tabUp.className = 'py-2 px-4 rounded-lg text-sm font-bold bg-white text-navy-900 shadow-sm transition cursor-pointer';
+                tabIn.className = 'py-2 px-4 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                heading.textContent = 'Create New Cloud Account';
+                subheading.textContent = 'Register as a Control Room Dispatcher, Field Technician, or Customer Reporter.';
+            }
+        };
+
+        // Email & Password Sign In
+        document.getElementById('signin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value.trim();
+            const password = document.getElementById('signin-password').value;
+            const btn = document.getElementById('signin-submit-btn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Authenticating...</span>';
+
+            try {
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const user = cred.user;
+                // Extract stored role from displayName format "Name|Role" or default to Dispatcher
+                let displayName = user.displayName || email.split('@')[0];
+                let role = 'Dispatcher';
+                if (displayName.includes('|')) {
+                    const parts = displayName.split('|');
+                    displayName = parts[0];
+                    role = parts[1];
+                }
+
+                currentUserProfile = {
+                    uid: user.uid,
+                    name: displayName,
+                    email: user.email,
+                    role: role,
+                    isGuest: false
+                };
+                enterAppPortal();
+                showToast(`Welcome back, ${displayName} (${role})`, 'success');
+            } catch (err) {
+                showToast(`Sign-in failed: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Sign In to Cloud Portal</span><i data-lucide="arrow-right" class="w-4 h-4 text-amber-400"></i>';
+                lucide.createIcons();
+            }
+        });
+
+        // Email & Password Registration
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const role = document.getElementById('signup-role').value;
+            const btn = document.getElementById('signup-submit-btn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Creating Account...</span>';
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(cred.user, { displayName: `${name}|${role}` });
+
+                // Also store profile in private user collection
+                await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'info'), {
+                    name,
+                    email,
+                    role,
+                    createdAt: getCurrentFormattedTimestamp()
+                });
+
+                currentUserProfile = {
+                    uid: cred.user.uid,
+                    name,
+                    email,
+                    role,
+                    isGuest: false
+                };
+                enterAppPortal();
+                showToast(`Account created! Signed in as ${name} (${role})`, 'success');
+            } catch (err) {
+                showToast(`Registration error: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="user-plus" class="w-4 h-4"></i><span>Register Cloud Account</span>';
+                lucide.createIcons();
+            }
+        });
+
+        // Quick Live Cloud Demo Access
+        window.quickCloudDemoLogin = async function(role, name) {
+            try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+                currentUserProfile = {
+                    uid: auth.currentUser ? auth.currentUser.uid : 'demo-user',
+                    name: name,
+                    email: 'demo@gridpulse.cloud',
+                    role: role,
+                    isGuest: false
+                };
+                enterAppPortal();
+                showToast(`Connected to Live Cloud as ${name} (${role})`, 'success');
+            } catch (err) {
+                showToast(`Connection error: ${err.message}`, 'error');
+            }
+        };
+
+        // Guest / Public Self-Service Entry
+        window.enterGuestPortal = async function(initialTab) {
+            try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+                currentUserProfile = {
+                    uid: auth.currentUser ? auth.currentUser.uid : 'guest-user',
+                    name: 'Public Citizen',
+                    email: '',
+                    role: 'Customer / Reporter',
+                    isGuest: true
+                };
+                enterAppPortal(initialTab);
+                showToast('Entered Public Outage Self-Service Portal', 'info');
+            } catch (err) {
+                showToast(`Connection error: ${err.message}`, 'error');
+            }
+        };
+
+        window.handleLogout = async function() {
+            currentUserProfile = null;
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('app-view').classList.add('hidden');
+            try {
+                await signOut(auth);
+                await signInAnonymously(auth); // Keep public listener alive for login screen telemetry
+            } catch (e) {
+                console.warn(e);
+            }
+            lucide.createIcons();
+        };
+
+        window.isStaffUser = function() {
+            if (!currentUserProfile) return false;
+            return currentUserProfile.role === 'Dispatcher' || currentUserProfile.role === 'Field Technician';
+        };
+
+        function enterAppPortal(forcedTab = null) {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+
+            document.getElementById('header-user-name').textContent = currentUserProfile.name;
+            document.getElementById('header-user-role').textContent = currentUserProfile.role;
+
+            const roleBanner = document.getElementById('role-notice-banner');
+            if (isStaffUser()) {
+                roleBanner.classList.add('hidden');
+            } else {
+                roleBanner.classList.remove('hidden');
+                if (!currentUserProfile.isGuest) {
+                    document.getElementById('reg-name').value = currentUserProfile.name;
+                }
+            }
+
+            if (forcedTab) {
+                switchTab(forcedTab);
+            } else if (isStaffUser()) {
+                switchTab('dashboard');
+            } else {
+                switchTab('register');
+            }
+
+            renderTickets();
+            lucide.createIcons();
+        }
+
+        // ==================== TAB NAVIGATION ====================
+        window.switchTab = function(tabName) {
+            const tabs = ['dashboard', 'register', 'tracker'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const deskBtn = document.getElementById(`nav-${t}`);
+                const mobBtn = document.getElementById(`mobile-nav-${t}`);
+
+                if (t === tabName) {
+                    el.classList.remove('hidden');
+                    deskBtn.className = 'tab-btn px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer bg-amber-500 text-navy-950';
+                    mobBtn.className = 'flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-amber-500 text-navy-950 whitespace-nowrap';
+                } else {
+                    el.classList.add('hidden');
+                    deskBtn.className = 'tab-btn px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer text-slate-300 hover:text-white hover:bg-navy-800';
+                    mobBtn.className = 'flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-navy-800 text-slate-300 whitespace-nowrap';
+                }
+            });
+
+            if (tabName === 'register') updateNextTicketPreview();
+            if (tabName === 'dashboard') renderTickets();
+            lucide.createIcons();
+        };
+
+        // ==================== GPS AUTO-DETECT ====================
+        window.detectGPSLocation = function() {
+            const btn = document.getElementById('detect-gps-btn');
+            const input = document.getElementById('reg-gps');
+
+            if (!navigator.geolocation) {
+                showToast('Geolocation is not supported by your browser.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-amber-400"></i><span>Locating...</span>';
+            lucide.createIcons();
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude.toFixed(5);
+                    const lng = pos.coords.longitude.toFixed(5);
+                    input.value = `${lat}, ${lng}`;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i><span>GPS Captured</span>';
+                    lucide.createIcons();
+                    showToast('GPS coordinates attached to outage report!', 'success');
+                },
+                (err) => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="crosshair" class="w-4 h-4 text-amber-400"></i><span>Auto-Detect My GPS</span>';
+                    lucide.createIcons();
+                    showToast('Could not read GPS location. You may enter it manually.', 'info');
+                },
+                { timeout: 8000 }
+            );
+        };
+
+        // ==================== OUTAGE REGISTRATION (FIRESTORE WRITE) ====================
+        function generateNextTicketCode() {
+            const maxNum = tickets.reduce((max, t) => {
+                if (!t.ticketCode) return max;
+                const num = parseInt(t.ticketCode.split('-')[2], 10);
+                return !isNaN(num) && num > max ? num : max;
+            }, 1041);
+            return `OUT-2026-${maxNum + 1}`;
+        }
+
+        function getCurrentFormattedTimestamp() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${mins}`;
+        }
+
+        function updateNextTicketPreview() {
+            document.getElementById('preview-ticket-id').textContent = generateNextTicketCode();
+            document.getElementById('preview-timestamp').textContent = getCurrentFormattedTimestamp();
+        }
+
+        document.getElementById('outage-registration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) {
+                showToast('Authenticating cloud session, please try again...', 'info');
+                return;
+            }
+
+            const submitBtn = document.getElementById('reg-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>Saving to Cloud...</span>';
+
+            const ticketCode = generateNextTicketCode();
+            const newOutage = {
+                ticketCode,
+                reporterName: document.getElementById('reg-name').value.trim(),
+                phone: document.getElementById('reg-phone').value.trim(),
+                meterNumber: document.getElementById('reg-meter').value.trim() || 'N/A',
+                district: document.getElementById('reg-district').value,
+                landmark: document.getElementById('reg-landmark').value.trim(),
+                gpsCoordinates: document.getElementById('reg-gps').value.trim() || null,
+                outageType: document.getElementById('reg-type').value,
+                priority: document.getElementById('reg-priority').value,
+                description: document.getElementById('reg-description').value.trim(),
+                status: 'Registered',
+                createdAt: getCurrentFormattedTimestamp(),
+                createdTimestamp: Date.now(),
+                submittedByUid: auth.currentUser.uid,
+                assignedCrew: null,
+                crewPhone: null,
+                eta: null,
+                dispatchNotes: null,
+                resolution: null
+            };
+
+            try {
+                await addDoc(outagesCollectionRef, newOutage);
+                e.target.reset();
+                showToast(`Ticket ${ticketCode} published live to Control Room!`, 'success');
+
+                if (isStaffUser()) {
+                    switchTab('dashboard');
+                } else {
+                    document.getElementById('tracker-query-input').value = ticketCode;
+                    switchTab('tracker');
+                    runPublicTrackerSearch(ticketCode);
+                }
+            } catch (err) {
+                showToast(`Failed to submit ticket: ${err.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i><span>Submit Live Outage Ticket</span>';
+                lucide.createIcons();
+            }
+        });
+
+        // ==================== DASHBOARD RENDERING ====================
+        window.renderTickets = function() {
+            const activeCount = tickets.filter(t => t.status !== 'Resolved').length;
+            const pendingCount = tickets.filter(t => t.status === 'Registered').length;
+            const progressCount = tickets.filter(t => t.status === 'Dispatched' || t.status === 'In Progress').length;
+            const resolvedCount = tickets.filter(t => t.status === 'Resolved').length;
+
+            document.getElementById('kpi-active').textContent = activeCount;
+            document.getElementById('kpi-pending').textContent = pendingCount;
+            document.getElementById('kpi-progress').textContent = progressCount;
+            document.getElementById('kpi-resolved').textContent = resolvedCount;
+
+            const searchQuery = document.getElementById('filter-search').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('filter-status').value;
+            const priorityFilter = document.getElementById('filter-priority').value;
+            const districtFilter = document.getElementById('filter-district').value;
+
+            const filtered = tickets.filter(t => {
+                const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
+                const matchesPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
+                const matchesDistrict = districtFilter === 'ALL' || t.district === districtFilter;
+                const matchesSearch = !searchQuery ||
+                    (t.ticketCode && t.ticketCode.toLowerCase().includes(searchQuery)) ||
+                    (t.reporterName && t.reporterName.toLowerCase().includes(searchQuery)) ||
+                    (t.phone && t.phone.toLowerCase().includes(searchQuery)) ||
+                    (t.landmark && t.landmark.toLowerCase().includes(searchQuery)) ||
+                    (t.outageType && t.outageType.toLowerCase().includes(searchQuery)) ||
+                    (t.assignedCrew && t.assignedCrew.toLowerCase().includes(searchQuery));
+
+                return matchesStatus && matchesPriority && matchesDistrict && matchesSearch;
+            });
+
+            const tbody = document.getElementById('tickets-table-body');
+            const emptyState = document.getElementById('empty-state');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const canOperate = isStaffUser();
+
+            tbody.innerHTML = filtered.map(ticket => {
+                const priorityBadge = getPriorityBadge(ticket.priority);
+                const statusBadge = getStatusBadge(ticket.status);
+
+                let gpsHtml = '';
+                if (ticket.gpsCoordinates) {
+                    const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(ticket.gpsCoordinates)}`;
+                    gpsHtml = `
+                        <a href="${mapUrl}" target="_blank" rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 text-[11px] font-mono text-blue-600 hover:underline mt-0.5">
+                            <i data-lucide="map-pin" class="w-3 h-3"></i>
+                            <span>${ticket.gpsCoordinates}</span>
+                        </a>
+                    `;
+                }
+
+                let crewHtml = `<span class="text-xs text-slate-400 italic">Unassigned</span>`;
+                if (ticket.assignedCrew) {
+                    const shortCrew = ticket.assignedCrew.split('—')[0].trim();
+                    crewHtml = `
+                        <div class="font-semibold text-xs text-slate-800">${shortCrew}</div>
+                        <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <i data-lucide="clock" class="w-3 h-3 text-amber-500"></i>
+                            <span>ETA: ${ticket.eta || 'N/A'}</span>
+                        </div>
+                    `;
+                }
+
+                // Role-protected Workflow Actions
+                let actionButtons = '';
+                if (canOperate) {
+                    if (ticket.status === 'Registered') {
+                        actionButtons = `
+                            <button onclick="openDispatchModal('${ticket.docId}')"
+                                class="px-3 py-1.5 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer shadow-sm">
+                                <i data-lucide="truck" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Dispatch</span>
+                            </button>
+                        `;
+                    } else if (ticket.status === 'Dispatched') {
+                        actionButtons = `
+                            <button onclick="markInProgress('${ticket.docId}', '${ticket.ticketCode}')"
+                                class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1 transition cursor-pointer shadow-sm">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                <span>On-Site</span>
+                            </button>
+                            <button onclick="openSolveModal('${ticket.docId}')"
+                                class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1 transition cursor-pointer shadow-sm">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>Solve</span>
+                            </button>
+                        `;
+                    } else if (ticket.status === 'In Progress') {
+                        actionButtons = `
+                            <button onclick="openSolveModal('${ticket.docId}')"
+                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer shadow-sm">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                                <span>Resolve & Close</span>
+                            </button>
+                        `;
+                    }
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50/90 transition">
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="font-mono font-bold text-xs text-navy-900">${ticket.ticketCode}</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">${ticket.createdAt}</div>
+                        </td>
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="font-semibold text-slate-800">${ticket.district} District</div>
+                            <div class="text-xs text-slate-500 max-w-xs truncate" title="${ticket.landmark}">${ticket.landmark}</div>
+                            ${gpsHtml}
+                        </td>
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="font-medium text-slate-800 text-xs">${ticket.outageType}</div>
+                            <div class="text-[11px] text-slate-400">By: ${ticket.reporterName}</div>
+                        </td>
+                        <td class="py-3.5 px-4 align-top">${priorityBadge}</td>
+                        <td class="py-3.5 px-4 align-top">${statusBadge}</td>
+                        <td class="py-3.5 px-4 align-top">${crewHtml}</td>
+                        <td class="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                ${actionButtons}
+                                <button onclick="openDetailsModal('${ticket.docId}')" title="Inspect Incident Dossier"
+                                    class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition cursor-pointer">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        };
+
+        function getPriorityBadge(priority) {
+            const styles = {
+                'Critical': 'bg-rose-100 text-rose-800 border-rose-200',
+                'High': 'bg-orange-100 text-orange-800 border-orange-200',
+                'Medium': 'bg-amber-100 text-amber-800 border-amber-200',
+                'Low': 'bg-slate-100 text-slate-700 border-slate-200'
+            };
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${styles[priority] || styles.Low}">${priority}</span>`;
+        }
+
+        function getStatusBadge(status) {
+            const config = {
+                'Registered': { cls: 'bg-slate-100 text-slate-700 border-slate-300', dot: 'bg-slate-500' },
+                'Dispatched': { cls: 'bg-amber-100 text-amber-900 border-amber-300', dot: 'bg-amber-500' },
+                'In Progress': { cls: 'bg-blue-100 text-blue-800 border-blue-300', dot: 'bg-blue-600' },
+                'Resolved': { cls: 'bg-emerald-100 text-emerald-800 border-emerald-300', dot: 'bg-emerald-600' }
+            };
+            const item = config[status] || config['Registered'];
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${item.cls}">
+                    <span class="w-1.5 h-1.5 rounded-full ${item.dot}"></span>
+                    ${status}
+                </span>
+            `;
+        }
+
+        // ==================== DISPATCH WORKFLOW (FIRESTORE UPDATE) ====================
+        window.openDispatchModal = function(docId) {
+            if (!isStaffUser()) return;
+            const ticket = tickets.find(t => t.docId === docId);
+            if (!ticket) return;
+
+            document.getElementById('dispatch-ticket-doc-id').value = ticket.docId;
+            document.getElementById('dispatch-ticket-code').value = ticket.ticketCode;
+            document.getElementById('dispatch-modal-code').textContent = ticket.ticketCode;
+            document.getElementById('dispatch-modal-priority').textContent = ticket.priority;
+            document.getElementById('dispatch-modal-location').textContent = `${ticket.district} District — ${ticket.landmark}`;
+            document.getElementById('dispatch-notes').value = '';
+
+            document.getElementById('dispatch-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        document.getElementById('dispatch-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser || !isStaffUser()) return;
+
+            const docId = document.getElementById('dispatch-ticket-doc-id').value;
+            const ticketCode = document.getElementById('dispatch-ticket-code').value;
+            const crew = document.getElementById('dispatch-crew').value;
+            const crewPhone = document.getElementById('dispatch-crew-phone').value.trim();
+            const eta = document.getElementById('dispatch-eta').value;
+            const notes = document.getElementById('dispatch-notes').value.trim();
+
+            try {
+                const ticketRef = doc(db, 'artifacts', appId, 'public', 'data', 'outages', docId);
+                await updateDoc(ticketRef, {
+                    status: 'Dispatched',
+                    assignedCrew: crew,
+                    crewPhone: crewPhone,
+                    eta: eta,
+                    dispatchNotes: notes || 'Standard safety & isolation protocol.',
+                    dispatchedBy: currentUserProfile.name,
+                    dispatchedAt: getCurrentFormattedTimestamp()
+                });
+
+                closeModal('dispatch-modal');
+                showToast(`${crew.split('—')[0].trim()} dispatched to ${ticketCode} (ETA: ${eta})`, 'success');
+            } catch (err) {
+                showToast(`Dispatch update failed: ${err.message}`, 'error');
+            }
+        });
+
+        window.markInProgress = async function(docId, ticketCode) {
+            if (!auth.currentUser || !isStaffUser()) return;
+            try {
+                const ticketRef = doc(db, 'artifacts', appId, 'public', 'data', 'outages', docId);
+                await updateDoc(ticketRef, {
+                    status: 'In Progress',
+                    eta: 'On Site'
+                });
+                showToast(`Ticket ${ticketCode} updated to In Progress (Crew On-Site).`, 'info');
+            } catch (err) {
+                showToast(`Update failed: ${err.message}`, 'error');
+            }
+        };
+
+        // ==================== SOLVING / RESOLUTION WORKFLOW (FIRESTORE UPDATE) ====================
+        window.openSolveModal = function(docId) {
+            if (!isStaffUser()) return;
+            const ticket = tickets.find(t => t.docId === docId);
+            if (!ticket) return;
+
+            document.getElementById('solve-ticket-doc-id').value = ticket.docId;
+            document.getElementById('solve-ticket-code').value = ticket.ticketCode;
+            document.getElementById('solve-modal-code').textContent = ticket.ticketCode;
+            document.getElementById('solve-modal-crew').textContent = ticket.assignedCrew || 'Field Engineering Unit';
+            document.getElementById('solve-modal-summary').textContent = `${ticket.outageType} — ${ticket.district} (${ticket.landmark})`;
+            document.getElementById('solve-materials').value = '';
+            document.getElementById('solve-notes').value = '';
+
+            document.getElementById('solve-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        document.getElementById('solve-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser || !isStaffUser()) return;
+
+            const docId = document.getElementById('solve-ticket-doc-id').value;
+            const ticketCode = document.getElementById('solve-ticket-code').value;
+            const rootCause = document.getElementById('solve-root-cause').value;
+            const actionTaken = document.getElementById('solve-action').value;
+            const materialsUsed = document.getElementById('solve-materials').value.trim() || 'None required';
+            const notes = document.getElementById('solve-notes').value.trim();
+
+            const existingTicket = tickets.find(t => t.docId === docId);
+
+            try {
+                const ticketRef = doc(db, 'artifacts', appId, 'public', 'data', 'outages', docId);
+                await updateDoc(ticketRef, {
+                    status: 'Resolved',
+                    eta: 'Completed',
+                    assignedCrew: (existingTicket && existingTicket.assignedCrew) ? existingTicket.assignedCrew : 'Rapid Field Engineer',
+                    resolution: {
+                        rootCause,
+                        actionTaken,
+                        materialsUsed,
+                        notes,
+                        resolvedAt: getCurrentFormattedTimestamp(),
+                        resolvedBy: currentUserProfile ? currentUserProfile.name : 'Field Engineer'
+                    }
+                });
+
+                closeModal('solve-modal');
+                showToast(`Ticket ${ticketCode} marked RESOLVED across all cloud screens!`, 'success');
+            } catch (err) {
+                showToast(`Resolution update failed: ${err.message}`, 'error');
+            }
+        });
+
+        // ==================== PUBLIC CUSTOMER OUTAGE TRACKER ====================
+        document.getElementById('tracker-search-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = document.getElementById('tracker-query-input').value.trim();
+            runPublicTrackerSearch(query);
+        });
+
+        window.quickTrackSample = function(ticketCode) {
+            document.getElementById('tracker-query-input').value = ticketCode;
+            runPublicTrackerSearch(ticketCode);
+        };
+
+        function runPublicTrackerSearch(query) {
+            const container = document.getElementById('tracker-results');
+            if (!query) return;
+
+            const qLower = query.toLowerCase();
+            const qDigits = query.replace(/\D/g, '');
+
+            const matches = tickets.filter(t => {
+                const codeMatch = t.ticketCode && t.ticketCode.toLowerCase().includes(qLower);
+                const phoneDigits = (t.phone || '').replace(/\D/g, '');
+                const phoneMatch = qDigits.length >= 6 && phoneDigits.includes(qDigits);
+                return codeMatch || phoneMatch;
+            });
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-center space-y-2">
+                        <div class="font-bold text-rose-900">No Ticket Found for "${query}"</div>
+                        <p class="text-xs text-rose-700">Double-check your Ticket ID (e.g., OUT-2026-1041) or phone number, or submit a new outage report.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = matches.map(t => {
+                const steps = ['Registered', 'Dispatched', 'In Progress', 'Resolved'];
+                const currentIdx = steps.indexOf(t.status);
+
+                const timelineHtml = steps.map((step, idx) => {
+                    const done = idx <= currentIdx;
+                    return `
+                        <div class="flex-1 flex flex-col items-center text-center">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${done ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}">
+                                ${done ? '✓' : idx + 1}
+                            </div>
+                            <span class="text-[11px] font-semibold mt-1.5 ${done ? 'text-slate-900' : 'text-slate-400'}">${step}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                            <div>
+                                <span class="font-mono font-extrabold text-base text-navy-900">${t.ticketCode}</span>
+                                <span class="ml-2 text-xs text-slate-500">Logged ${t.createdAt}</span>
+                            </div>
+                            ${getStatusBadge(t.status)}
+                        </div>
+
+                        <!-- Progress Steps -->
+                        <div class="flex items-center justify-between gap-1 py-2">
+                            ${timelineHtml}
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-4 rounded-xl border border-slate-200">
+                            <div><span class="text-slate-400 block">District & Location</span><strong class="text-slate-900">${t.district} — ${t.landmark}</strong></div>
+                            <div><span class="text-slate-400 block">Fault Category</span><strong class="text-slate-900">${t.outageType} (${t.priority})</strong></div>
+                            <div><span class="text-slate-400 block">Assigned Repair Crew</span><strong class="text-slate-900">${t.assignedCrew || 'Awaiting Dispatch Assignment'}</strong></div>
+                            <div><span class="text-slate-400 block">Estimated Arrival / Status</span><strong class="text-amber-700">${t.eta || 'Pending'}</strong></div>
+                        </div>
+
+                        ${t.resolution ? `
+                            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
+                                <div class="font-bold text-emerald-900">Power Restored at ${t.resolution.resolvedAt}</div>
+                                <div class="text-emerald-800"><strong>Root Cause:</strong> ${t.resolution.rootCause} — <strong>Action:</strong> ${t.resolution.actionTaken}</div>
+                                <div class="text-emerald-700">${t.resolution.notes}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== EXPORT TO CSV REPORT ====================
+        window.exportTicketsToCSV = function() {
+            if (tickets.length === 0) {
+                showToast('No tickets available to export.', 'info');
+                return;
+            }
+
+            const headers = [
+                'Ticket ID', 'Status', 'Priority', 'District', 'Landmark', 'GPS',
+                'Fault Category', 'Reporter Name', 'Phone', 'Meter Number',
+                'Logged Time', 'Assigned Crew', 'ETA', 'Root Cause', 'Action Taken', 'Resolved Time'
+            ];
+
+            const rows = tickets.map(t => [
+                t.ticketCode,
+                t.status,
+                t.priority,
+                t.district,
+                `"${(t.landmark || '').replace(/"/g, '""')}"`,
+                `"${(t.gpsCoordinates || '').replace(/"/g, '""')}"`,
+                `"${(t.outageType || '').replace(/"/g, '""')}"`,
+                `"${(t.reporterName || '').replace(/"/g, '""')}"`,
+                `"${(t.phone || '').replace(/"/g, '""')}"`,
+                t.meterNumber || '',
+                t.createdAt,
+                `"${(t.assignedCrew || 'Unassigned').replace(/"/g, '""')}"`,
+                t.eta || '',
+                `"${(t.resolution?.rootCause || '').replace(/"/g, '""')}"`,
+                `"${(t.resolution?.actionTaken || '').replace(/"/g, '""')}"`,
+                t.resolution?.resolvedAt || ''
+            ]);
+
+            const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `GridPulse_Outage_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('Official CSV outage report downloaded!', 'success');
+        };
+
+        // ==================== TICKET DETAILS MODAL ====================
+        window.openDetailsModal = function(docId) {
+            const t = tickets.find(item => item.docId === docId);
+            if (!t) return;
+
+            document.getElementById('details-modal-title').textContent = `${t.ticketCode} — Incident Dossier`;
+
+            let dispatchSection = `
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs italic">
+                    No field crew dispatched yet. Ticket is currently awaiting control room assignment.
+                </div>
+            `;
+
+            if (t.assignedCrew) {
+                dispatchSection = `
+                    <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
+                        <div class="text-xs font-bold uppercase tracking-wider text-amber-800">Dispatch Assignment</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div><span class="text-slate-500">Assigned Crew:</span> <strong class="text-slate-900">${t.assignedCrew}</strong></div>
+                            <div><span class="text-slate-500">Crew Phone:</span> <strong class="text-slate-900 font-mono">${t.crewPhone || 'N/A'}</strong></div>
+                            <div><span class="text-slate-500">ETA / Status:</span> <strong class="text-slate-900">${t.eta}</strong></div>
+                            <div><span class="text-slate-500">Dispatched By:</span> <strong class="text-slate-900">${t.dispatchedBy || 'Control Room'}</strong></div>
+                        </div>
+                        <div class="text-xs"><span class="text-slate-500">Dispatch Notes:</span> <span class="text-slate-800">${t.dispatchNotes || 'N/A'}</span></div>
+                    </div>
+                `;
+            }
+
+            let resolutionSection = '';
+            if (t.resolution) {
+                resolutionSection = `
+                    <div class="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Resolution & Restoration Record</span>
+                            <span class="font-mono text-[11px] text-emerald-700">${t.resolution.resolvedAt}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div><span class="text-slate-500">Root Cause:</span> <strong class="text-slate-900">${t.resolution.rootCause}</strong></div>
+                            <div><span class="text-slate-500">Action Taken:</span> <strong class="text-slate-900">${t.resolution.actionTaken}</strong></div>
+                            <div><span class="text-slate-500">Materials Used:</span> <span class="text-slate-800">${t.resolution.materialsUsed}</span></div>
+                            <div><span class="text-slate-500">Verified By:</span> <strong class="text-slate-900">${t.resolution.resolvedBy}</strong></div>
+                        </div>
+                        <div class="text-xs pt-1 border-t border-emerald-200/70">
+                            <span class="text-slate-500">Engineer Verification Notes:</span> <p class="text-slate-800 mt-0.5">${t.resolution.notes}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('details-modal-body').innerHTML = `
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200">
+                    <div class="flex items-center gap-2">
+                        ${getStatusBadge(t.status)}
+                        ${getPriorityBadge(t.priority)}
+                    </div>
+                    <span class="text-xs text-slate-500 font-mono">Logged: ${t.createdAt}</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5">
+                        <div class="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Location, Feeder & GPS</div>
+                        <div class="font-bold text-slate-900 text-sm">${t.district} District</div>
+                        <div class="text-slate-600">${t.landmark}</div>
+                        ${t.gpsCoordinates ? `<div class="font-mono text-blue-600">GPS: ${t.gpsCoordinates}</div>` : ''}
+                    </div>
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5">
+                        <div class="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Reporter & Meter Info</div>
+                        <div class="font-bold text-slate-900 text-sm">${t.reporterName}</div>
+                        <div class="text-slate-600 font-mono">${t.phone}</div>
+                        <div class="text-slate-500 font-mono">Meter: ${t.meterNumber || 'N/A'}</div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Fault Category & Observation</div>
+                    <div class="font-semibold text-slate-900">${t.outageType}</div>
+                    <p class="text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs leading-relaxed">${t.description}</p>
+                </div>
+
+                ${dispatchSection}
+                ${resolutionSection}
+            `;
+
+            document.getElementById('details-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.openModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        };
+
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const colors = {
+                success: 'bg-navy-900 text-white border-emerald-500',
+                info: 'bg-navy-900 text-white border-amber-500',
+                error: 'bg-rose-900 text-white border-rose-500'
+            };
+
+            const icons = {
+                success: 'check-circle-2',
+                info: 'info',
+                error: 'alert-circle'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border-l-4 text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0 text-amber-400"></i>
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // Initialize Icons & Cloud Auth on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initAuth();
+        });
+    </script>
+</body>
+</html>
